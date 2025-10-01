@@ -1,6 +1,6 @@
 %% Module parser COBOL compatible avec AlephTree étendu (Rust)
 -module(cobol_parser).
--export([parse/1, parse_file/1, tokenize/1, to_json/1]).
+-export([parse/1, parse_file/1, tokenize/1]).
 
 %% Records pour les structures COBOL spécifiques
 -record(cobol_program, {
@@ -473,7 +473,6 @@ aleph_hex_literal(Value) ->
     #{<<"type">> => <<"HexLiteral">>,
       <<"value">> => list_to_binary(Value)}.
 
-%% Fonctions AlephTree de base (conservées)
 aleph_unit() ->
     #{<<"type">> => <<"Unit">>}.
 
@@ -533,11 +532,6 @@ aleph_comment(Value) ->
     #{<<"type">> => <<"Comment">>,
       <<"value">> => list_to_binary(Value)}.
 
-%% Fonction pour exporter en JSON
-to_json(AlephTree) ->
-    jsx:encode(AlephTree, [{space, 2}, {indent, 2}]).
-
-%% Tokenizer basique (conservé)
 tokenize(Source) ->
     Lines = string:tokens(Source, "\n"),
     ProcessedLines = [process_line(Line) || Line <- Lines],
