@@ -1,8 +1,7 @@
 grammar;
-
 use aleph_syntax_tree::syntax::AlephTree as at;
 
-/// Un programme COBOL est composé d'au moins une division.
+/// A COBOL program is composed of at least one division.
 pub Program: at = {
     <divs:NonEmptyDivisionList> => at::Module {
         name: "COBOL_PROGRAM".to_string(),
@@ -14,7 +13,7 @@ pub Program: at = {
     }
 }
 
-/// Une liste non vide de divisions.
+/// A non-empty list of divisions.
 pub NonEmptyDivisionList: Vec<Box<at>> = {
     <div:Division> => vec![Box::new(div)],
     <divs:NonEmptyDivisionList> <div:Division> => {
@@ -24,7 +23,7 @@ pub NonEmptyDivisionList: Vec<Box<at>> = {
     }
 }
 
-/// Une division COBOL.
+/// A COBOL division.
 pub Division: at = {
     <div:IdentificationDivision> => div,
     <div:EnvironmentDivision> => div,
@@ -32,7 +31,7 @@ pub Division: at = {
     <div:ProcedureDivision> => div,
 }
 
-/// IDENTIFICATION DIVISION.
+/// The IDENTIFICATION DIVISION.
 pub IdentificationDivision: at = {
     "IDENTIFICATION" "DIVISION." <content:ParagraphList> => at::Division {
         division_type: "identification".to_string(),
@@ -40,7 +39,7 @@ pub IdentificationDivision: at = {
     }
 }
 
-/// ENVIRONMENT DIVISION.
+/// The ENVIRONMENT DIVISION.
 pub EnvironmentDivision: at = {
     "ENVIRONMENT" "DIVISION." <content:ParagraphList> => at::Division {
         division_type: "environment".to_string(),
@@ -48,7 +47,7 @@ pub EnvironmentDivision: at = {
     }
 }
 
-/// DATA DIVISION.
+/// The DATA DIVISION.
 pub DataDivision: at = {
     "DATA" "DIVISION." <secs:ParagraphList> => at::Division {
         division_type: "data".to_string(),
@@ -56,7 +55,7 @@ pub DataDivision: at = {
     }
 }
 
-/// PROCEDURE DIVISION.
+/// The PROCEDURE DIVISION.
 pub ProcedureDivision: at = {
     "PROCEDURE" "DIVISION." <content:ParagraphList> => at::Division {
         division_type: "procedure".to_string(),
@@ -64,7 +63,7 @@ pub ProcedureDivision: at = {
     }
 }
 
-/// Une section COBOL.
+/// A COBOL section with a name and list of paragraphs.
 pub Section: at = {
     <name:Ident> "SECTION." <content:ParagraphList> => at::Section {
         name,
@@ -73,13 +72,13 @@ pub Section: at = {
     }
 }
 
-/// Une liste de paragraphes (peut être vide).
+/// A list of paragraphs (can be empty).
 pub ParagraphList: Vec<Box<at>> = {
     => Vec::new(),
     <ps:NonEmptyParagraphList> => ps,
 }
 
-/// Une liste non vide de paragraphes.
+/// A non-empty list of paragraphs.
 pub NonEmptyParagraphList: Vec<Box<at>> = {
     <p:Paragraph> => vec![Box::new(p)],
     <ps:NonEmptyParagraphList> <p:Paragraph> => {
@@ -89,7 +88,7 @@ pub NonEmptyParagraphList: Vec<Box<at>> = {
     }
 }
 
-/// Un paragraphe COBOL.
+/// A COBOL paragraph, composed of a name and one or more statements.
 pub Paragraph: at = {
     <name:Ident> "." <stmts:StatementList> => at::Paragraph {
         name,
@@ -97,13 +96,13 @@ pub Paragraph: at = {
     }
 }
 
-/// Une liste de statements (peut être vide).
+/// A list of statements (can be empty).
 pub StatementList: Vec<Box<at>> = {
     => Vec::new(),
     <stmts:NonEmptyStatementList> => stmts,
 }
 
-/// Une liste non vide de statements.
+/// A non-empty list of statements.
 pub NonEmptyStatementList: Vec<Box<at>> = {
     <stmt:Statement> => vec![Box::new(stmt)],
     <stmts:NonEmptyStatementList> <stmt:Statement> => {
@@ -113,7 +112,7 @@ pub NonEmptyStatementList: Vec<Box<at>> = {
     }
 }
 
-/// Un statement COBOL.
+/// A COBOL statement (DISPLAY, MOVE, PERFORM, or IF).
 pub Statement: at = {
     <stmt:DisplayStmt> => stmt,
     <stmt:MoveStmt> => stmt,
@@ -121,7 +120,7 @@ pub Statement: at = {
     <stmt:IfStmt> => stmt,
 }
 
-/// DISPLAY statement.
+/// The DISPLAY statement.
 pub DisplayStmt: at = {
     "DISPLAY" <items:NonEmptyLiteralList> "." => at::Display {
         item_list: items,
@@ -129,7 +128,7 @@ pub DisplayStmt: at = {
     }
 }
 
-/// MOVE statement.
+/// The MOVE statement.
 pub MoveStmt: at = {
     "MOVE" <src:Ident> "TO" <dst:Ident> "." => at::Move {
         source: Box::new(at::Ident { value: src }),
@@ -137,7 +136,7 @@ pub MoveStmt: at = {
     }
 }
 
-/// PERFORM statement.
+/// The PERFORM statement (simple form, target only).
 pub PerformStmt: at = {
     "PERFORM" <target:Ident> "." => at::Perform {
         target: Some(target),
@@ -150,8 +149,8 @@ pub PerformStmt: at = {
     }
 }
 
-/// IF statement.
-/// On ajoute un point final explicite pour lever l'ambiguïté.
+/// The IF statement.
+/// An explicit trailing period is required to remove ambiguity.
 pub IfStmt: at = {
     "IF" <cond:Condition> <then:NonEmptyStatementList> "." => at::If {
         condition: Box::new(cond),
@@ -160,7 +159,7 @@ pub IfStmt: at = {
     }
 }
 
-/// Condition d'égalité.
+/// A condition testing equality between two identifiers.
 pub Condition: at = {
     <lhs:Ident> "=" <rhs:Ident> => at::Eq {
         expr1: Box::new(at::Ident { value: lhs }),
@@ -168,7 +167,7 @@ pub Condition: at = {
     }
 }
 
-/// Une liste non vide de littéraux.
+/// A non-empty list of literals.
 pub NonEmptyLiteralList: Vec<Box<at>> = {
     <lit:Literal> => vec![Box::new(lit)],
     <lits:NonEmptyLiteralList> <lit:Literal> => {
@@ -178,20 +177,20 @@ pub NonEmptyLiteralList: Vec<Box<at>> = {
     }
 }
 
-/// Un littéral (string ou identifiant).
+/// A literal value (string or identifier).
 pub Literal: at = {
     <s:StringLiteral> => s,
     <i:Ident> => at::Ident { value: i },
 }
 
-/// Un littéral string.
+/// A string literal between single quotes.
 pub StringLiteral: at = {
     r#"'[^']*'"# => at::String {
         value: <>.to_string().trim_matches('\'').to_string(),
     }
 }
 
-/// Un identifiant.
+/// An identifier: alphanumeric with optional hyphens.
 pub Ident: String = {
     r#"[A-Za-z0-9-]+"# => <>.to_string(),
 };
