@@ -1,0 +1,22 @@
+[package]
+name = "cobolparser"
+version = "0.1.0"
+edition = "2024"
+license-file="LICENSE"
+repository="https://github.com/aleph-lang/cobolparser"
+description="Aleph Parser for Cobol language : generate Aleph Syntax Tree."
+
+[profile.dev]
+opt-level = 3
+
+[profile.release]
+opt-level = 3 
+
+[build-dependencies]
+lalrpop = { version = "0.22", features = ["lexer"] }
+
+[dependencies]
+lalrpop-util = {version = "0.22", features = ["lexer"]}
+regex = "1"
+aleph-syntax-tree = "0.1.3"
+

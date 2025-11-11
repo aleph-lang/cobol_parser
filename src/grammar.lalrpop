@@ -1,0 +1,198 @@
+grammar;
+
+use aleph_syntax_tree::syntax::AlephTree as at;
+
+/// Un programme COBOL est composé d'au moins une division.
+pub Program: at = {
+    <divs:NonEmptyDivisionList> => at::Module {
+        name: "COBOL_PROGRAM".to_string(),
+        module_type: "program".to_string(),
+        id: None,
+        declarations: divs,
+        body: None,
+        initialization: None,
+    }
+}
+
+/// Une liste non vide de divisions.
+pub NonEmptyDivisionList: Vec<Box<at>> = {
+    <div:Division> => vec![Box::new(div)],
+    <divs:NonEmptyDivisionList> <div:Division> => {
+        let mut v = divs;
+        v.push(Box::new(div));
+        v
+    }
+}
+
+/// Une division COBOL.
+pub Division: at = {
+    <div:IdentificationDivision> => div,
+    <div:EnvironmentDivision> => div,
+    <div:DataDivision> => div,
+    <div:ProcedureDivision> => div,
+}
+
+/// IDENTIFICATION DIVISION.
+pub IdentificationDivision: at = {
+    "IDENTIFICATION" "DIVISION." <content:ParagraphList> => at::Division {
+        division_type: "identification".to_string(),
+        sections: content,
+    }
+}
+
+/// ENVIRONMENT DIVISION.
+pub EnvironmentDivision: at = {
+    "ENVIRONMENT" "DIVISION." <content:ParagraphList> => at::Division {
+        division_type: "environment".to_string(),
+        sections: content,
+    }
+}
+
+/// DATA DIVISION.
+pub DataDivision: at = {
+    "DATA" "DIVISION." <secs:ParagraphList> => at::Division {
+        division_type: "data".to_string(),
+        sections: secs,
+    }
+}
+
+/// PROCEDURE DIVISION.
+pub ProcedureDivision: at = {
+    "PROCEDURE" "DIVISION." <content:ParagraphList> => at::Division {
+        division_type: "procedure".to_string(),
+        sections: content,
+    }
+}
+
+/// Une section COBOL.
+pub Section: at = {
+    <name:Ident> "SECTION." <content:ParagraphList> => at::Section {
+        name,
+        section_type: None,
+        content,
+    }
+}
+
+/// Une liste de paragraphes (peut être vide).
+pub ParagraphList: Vec<Box<at>> = {
+    => Vec::new(),
+    <ps:NonEmptyParagraphList> => ps,
+}
+
+/// Une liste non vide de paragraphes.
+pub NonEmptyParagraphList: Vec<Box<at>> = {
+    <p:Paragraph> => vec![Box::new(p)],
+    <ps:NonEmptyParagraphList> <p:Paragraph> => {
+        let mut v = ps;
+        v.push(Box::new(p));
+        v
+    }
+}
+
+/// Un paragraphe COBOL.
+pub Paragraph: at = {
+    <name:Ident> "." <stmts:StatementList> => at::Paragraph {
+        name,
+        statements: stmts,
+    }
+}
+
+/// Une liste de statements (peut être vide).
+pub StatementList: Vec<Box<at>> = {
+    => Vec::new(),
+    <stmts:NonEmptyStatementList> => stmts,
+}
+
+/// Une liste non vide de statements.
+pub NonEmptyStatementList: Vec<Box<at>> = {
+    <stmt:Statement> => vec![Box::new(stmt)],
+    <stmts:NonEmptyStatementList> <stmt:Statement> => {
+        let mut v = stmts;
+        v.push(Box::new(stmt));
+        v
+    }
+}
+
+/// Un statement COBOL.
+pub Statement: at = {
+    <stmt:DisplayStmt> => stmt,
+    <stmt:MoveStmt> => stmt,
+    <stmt:PerformStmt> => stmt,
+    <stmt:IfStmt> => stmt,
+}
+
+/// DISPLAY statement.
+pub DisplayStmt: at = {
+    "DISPLAY" <items:NonEmptyLiteralList> "." => at::Display {
+        item_list: items,
+        upon_device: None,
+    }
+}
+
+/// MOVE statement.
+pub MoveStmt: at = {
+    "MOVE" <src:Ident> "TO" <dst:Ident> "." => at::Move {
+        source: Box::new(at::Ident { value: src }),
+        targets: vec![Box::new(at::Ident { value: dst })],
+    }
+}
+
+/// PERFORM statement.
+pub PerformStmt: at = {
+    "PERFORM" <target:Ident> "." => at::Perform {
+        target: Some(target),
+        from: None,
+        through: None,
+        times: None,
+        until: None,
+        varying: None,
+        inline: None,
+    }
+}
+
+/// IF statement.
+/// On ajoute un point final explicite pour lever l'ambiguïté.
+pub IfStmt: at = {
+    "IF" <cond:Condition> <then:NonEmptyStatementList> "." => at::If {
+        condition: Box::new(cond),
+        then: Box::new(at::Block { statements: then }),
+        els: Box::new(at::Unit),
+    }
+}
+
+/// Condition d'égalité.
+pub Condition: at = {
+    <lhs:Ident> "=" <rhs:Ident> => at::Eq {
+        expr1: Box::new(at::Ident { value: lhs }),
+        expr2: Box::new(at::Ident { value: rhs }),
+    }
+}
+
+/// Une liste non vide de littéraux.
+pub NonEmptyLiteralList: Vec<Box<at>> = {
+    <lit:Literal> => vec![Box::new(lit)],
+    <lits:NonEmptyLiteralList> <lit:Literal> => {
+        let mut v = lits;
+        v.push(Box::new(lit));
+        v
+    }
+}
+
+/// Un littéral (string ou identifiant).
+pub Literal: at = {
+    <s:StringLiteral> => s,
+    <i:Ident> => at::Ident { value: i },
+}
+
+/// Un littéral string.
+pub StringLiteral: at = {
+    r#"'[^']*'"# => at::String {
+        value: <>.to_string().trim_matches('\'').to_string(),
+    }
+}
+
+/// Un identifiant.
+pub Ident: String = {
+    r#"[A-Za-z0-9-]+"# => <>.to_string(),
+};
+

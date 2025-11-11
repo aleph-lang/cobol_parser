@@ -1,2 +1,3 @@
-# cobol_parser
-Cobol parser to Aleph Syntax Tree
+# forthparser
+
+Aleph parser, based on Aleph Syntax Tree and LALRPOP library.
