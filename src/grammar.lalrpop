@@ -90,9 +90,14 @@ pub NonEmptyParagraphList: Vec<Box<at>> = {
 
 /// A COBOL paragraph, composed of a name and one or more statements.
 pub Paragraph: at = {
-    <name:Ident> "." <stmts:StatementList> => at::Paragraph {
+    <name:Ident> "." <stmts:StatementList> => at::ProcedureDef {
         name,
-        statements: stmts,
+        proc_type: Some("paragraph".to_string()),
+        parameters: Vec::new(),
+        return_type: None,
+        attributes: Vec::new(),
+        declarations: Vec::new(),
+        body: stmts,
     }
 }
 
@@ -122,9 +127,11 @@ pub Statement: at = {
 
 /// The DISPLAY statement.
 pub DisplayStmt: at = {
-    "DISPLAY" <items:NonEmptyLiteralList> "." => at::Display {
-        item_list: items,
-        upon_device: None,
+    "DISPLAY" <items:NonEmptyLiteralList> "." => at::Print {
+        items,
+        destination: None,
+        format: None,
+        options: Vec::new(),
     }
 }
 
@@ -194,4 +201,3 @@ pub StringLiteral: at = {
 pub Ident: String = {
     r#"[A-Za-z0-9-]+"# => <>.to_string(),
 };
-
